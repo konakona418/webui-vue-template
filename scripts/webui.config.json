@@ -1,0 +1,47 @@
+{
+    "targetOs": "Windows",
+    "targetArchitecture": "x64",
+    "cpp": {
+        "targetName": "webui-template",
+        "defaultBuildTargetType": "Default",
+        "buildSystem": {
+            "name": "CMake",
+            "path": "/* path to cmake */",
+            "options": {}
+        },
+        "generator": {
+            "name": "Ninja",
+            "path": "/* path to ninja */"
+        },
+        "directory": {
+            "source": "./src-cpp",
+            "build": "./src-cpp/webui-build",
+            "webuiSubDirName": "webui"
+        },
+        "buildArgs": {
+            "parallel": {
+                "key": "-j",
+                "value": "8"
+            }
+        }
+    },
+    "node": {
+        "build": {
+            "indexTemplate": "webui_index.html",
+            "indexHtml": "index.html",
+            "subStrings": {
+                "webuiBridge": "<!-- |SUBUSTITUTE WEBUI BRIDGE PATH| -->"
+            },
+            "commands": {
+                "dev": "npm run dev",
+                "build": "npm run build",
+                "preview": "npm run preview"
+            },
+            "output": "dist"
+        },
+        "debug": {
+            "nodeServer": 1420,
+            "webuiServer": 1430
+        }
+    }
+}
