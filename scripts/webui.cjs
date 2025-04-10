@@ -4,8 +4,19 @@ const path = require('path');
 const config = require('./webui.config.json');
 const { execSync, exec } = require('child_process');
 
+const Context = class {
+    buildOption;
+    shouldBuildCpp;
+    shouldReloadCMakeFile;
+    constructor(buildOption, shouldBuildCpp, shouldReloadCMakeFile) {
+        this.buildOption = buildOption;
+        this.shouldBuildCpp = shouldBuildCpp;
+        this.shouldReloadCMakeFile = shouldReloadCMakeFile;
+    }
+}
+
 const printSeparatorLine = () => {
-    console.log("------------------------------------------------------");
+    console.log("");
 }
 
 const copyDynLib = () => {
@@ -28,15 +39,18 @@ const copyDynLib = () => {
     }
 }
 
-const buildCppProject = (buildOption) => {
-    let buildTargetType;
-    if (buildOption === "dev") {
-        buildTargetType = "Debug";
-    } else if (buildOption === "build") {
-        buildTargetType = "Release";
-    } else {
-        buildTargetType = config.cpp.defaultBuildTargetType;
-    }
+const buildCppProject = (ctx) => {
+    const buildOption = ctx.buildOption;
+    let buildTargetType = (() => {
+        if (buildOption === "dev") {
+            return "Debug";
+        } else if (buildOption === "build") {
+            return "Release";
+        } else {
+            return config.cpp.defaultBuildTargetType;
+        }
+    })();
+    
 
     const cwd = process.cwd();
     const target = config.cpp.targetName;
@@ -74,9 +88,13 @@ const buildCppProject = (buildOption) => {
     printSeparatorLine();
     
     console.log(`Building C++ Project. Phase 1/2: Generating Project...`);
-    console.log(`Generate Command: ${makeGenCommand}`);
+    // console.log(`Generate Command: ${makeGenCommand}`);
     try {
-        execSync(makeGenCommand, {"stdio": "inherit"});
+        if (ctx.shouldReloadCMakeFile) {
+            execSync(makeGenCommand, {"stdio": "inherit"});
+        } else {
+            console.log(`Skip Generating CMake Project.`);
+        }
     } catch (error) {
         console.error(`CMake Error:\n${error}`);
         return false;
@@ -98,7 +116,8 @@ const buildCppProject = (buildOption) => {
             makeBuildCommand += ` ${argName} ${argValue}`;
         }
     }
-    console.log(`Build Command: ${makeBuildCommand}`);
+
+    //console.log(`Build Command: ${makeBuildCommand}`);
     try {
         execSync(makeBuildCommand, {"stdio": "inherit"});
     } catch (error) {
@@ -255,33 +274,46 @@ console.log("Current Running Under Directory: " + process.cwd());
 console.log("Starting WebUI CLI...");
 const buildOption = process.argv[2] ? process.argv[2].toLowerCase() : "none";
 
+if (buildOption == "help") {
+    console.log("Usage: node build.js <buildOption> [<params>]");
+    console.log("buildOption: dev, build");
+    console.log("params:");
+    console.log("  no-cpp: Skip C++ Project Build");
+    console.log("  no-reload: Skip Reload CMake File");
+
+    process.exit(0);
+}
+
 if (buildOption === "none" || buildOption !== "dev" && buildOption !== "build") {
-    console.log("Unknown usage. Type --help for help.")
+    console.log("Unknown usage. Type 'help' for help.")
     process.exit(1);
 }
 
-if (buildOption == "--help") {
-    console.log("Usage: node build.js <buildOption> [<params>]");
-    console.log("buildOption: dev, build");
-    console.log("params: no-cpp");
-}
-
-let noBuildCppProject = false;
+let shouldBuildCppProject = true;
+let shouldReloadCMakeFile = true;
 if (process.argv.length > 3) {
     for (let i = 3; i < process.argv.length; i++) {
-        if (process.argv[i].toLowerCase() === "no-cpp") {
-            noBuildCppProject = true;
-        } else {
-            console.log(`Unknown param: ${process.argv[i]}`);
+        switch (process.argv[i].toLowerCase()) {
+            case "no-cpp":
+                shouldBuildCppProject = false;
+                break;
+            case "no-reload":
+                shouldReloadCMakeFile = false;
+                break;
+            default:
+                console.log("Unknown params: " + process.argv[i]);
+                break;
         }
     }
 }
 
+const ctx = new Context(buildOption, shouldBuildCppProject, shouldReloadCMakeFile);
+
 console.log("Build Option: " + buildOption);
 printSeparatorLine();
 
-if (!noBuildCppProject) {
-    if (!buildCppProject(buildOption)) {
+if (ctx.shouldBuildCpp) {
+    if (!buildCppProject(ctx)) {
         console.log("C++ Project Build Failed");
         process.exit(1);
     }
