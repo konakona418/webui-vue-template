@@ -26,16 +26,16 @@ const copyDynLib = () => {
     }
     const webviewDynLibPath = webviewFinder();
     if (webviewDynLibPath == "") {
-        console.log("Webview DLL Not Found. Skip Copy Dynamic Library...");
+        console.log("Webview DLL not found. Skip copying dynamic library...");
         return;
     }
     const webviewDynLibDestPath = path.join(cwd, config.cpp.directory.build, 
         path.basename(webviewDynLibPath));
     if (!fs.existsSync(webviewDynLibDestPath)) {
         fs.copyFileSync(webviewDynLibPath, webviewDynLibDestPath);
-        console.log(`Copied Webview DLL Successfully: ${webviewDynLibDestPath}`);
+        console.log(`Copied webview DLL successfully: ${webviewDynLibDestPath}`);
     } else {
-        console.log(`Webview DLL Already Exists: ${webviewDynLibDestPath}`);
+        console.log(`Webview DLL already exists: ${webviewDynLibDestPath}`);
     }
 }
 
@@ -57,11 +57,11 @@ const buildCppProject = (ctx) => {
     const cppProjectPath = path.join(cwd, config.cpp.directory.source);
     const cppBuildPath = path.join(cwd, config.cpp.directory.build);
 
-    console.log(`Building C++ Target: ${target}`);
-    console.log("C++ Project Build Target Type: " + buildTargetType);
+    console.log(`Building C++ target: ${target}`);
+    console.log("C++ project build target type: " + buildTargetType);
 
     if (!fs.existsSync(cppProjectPath)) {
-        console.error(`C++ Project Directory Not Found: ${cppProjectPath}`);
+        console.error(`C++ project directory not found: ${cppProjectPath}`);
         return false;
     }
 
@@ -87,23 +87,23 @@ const buildCppProject = (ctx) => {
     console.log('Configuration done, begin generating CMake Project...')
     printSeparatorLine();
     
-    console.log(`Building C++ Project. Phase 1/2: Generating Project...`);
+    console.log(`Building C++ project. Phase 1/2: generating project...`);
     // console.log(`Generate Command: ${makeGenCommand}`);
     try {
         if (ctx.shouldReloadCMakeFile) {
             execSync(makeGenCommand, {"stdio": "inherit"});
         } else {
-            console.log(`Skip Generating CMake Project.`);
+            console.log(`Skip generating CMake project.`);
         }
     } catch (error) {
-        console.error(`CMake Error:\n${error}`);
+        console.error(`CMake error:\n${error}`);
         return false;
     } finally {
-        console.log(`Generated CMake Project Successfully.`);
+        console.log(`Generated CMake project successfully.`);
     }
     printSeparatorLine();
 
-    console.log(`Building C++ Project. Phase 2/2: Building Project...`);
+    console.log(`Building C++ project. Phase 2/2: building project...`);
 
     const baseMakeBuildCommand = `"${makePath}" --build ${cppBuildPath} --target ${target}`;
     let makeBuildCommand = baseMakeBuildCommand;
@@ -121,16 +121,16 @@ const buildCppProject = (ctx) => {
     try {
         execSync(makeBuildCommand, {"stdio": "inherit"});
     } catch (error) {
-        console.error(`Build Error:\n${error}`);
+        console.error(`Build error:\n${error}`);
         return false;
     } finally {
-        console.log(`Built C++ Project Successfully.`);
+        console.log(`Built C++ project successfully.`);
     }
     printSeparatorLine();
     console.log('Running post-task for C++ Project...')
-    console.log('Copying Webview Dynamic Library...')
+    console.log('Copying webview dynamic library...')
     copyDynLib();
-    console.log('Done');
+    console.log('Done.');
     printSeparatorLine();
     return true;
 }
@@ -138,19 +138,19 @@ const buildCppProject = (ctx) => {
 const webviewFinder = () => {
     const cwd = process.cwd();
     if (config.targetOs.toLowerCase() !== 'windows') {
-        console.log("Not Windows. Skip Find Webview DLL...");
+        console.log("Not windows. Skip finding webview DLL...");
         return ""
     }
     const webviewPath = path.join(cwd, config.cpp.directory.build, '_deps', 'microsoft_web_webview2-src');
     if (!fs.existsSync(webviewPath)) {
-        console.error(`Downloaded webview File Not Found: ${webviewPath}`);
+        console.error(`Downloaded webview file not found: ${webviewPath}`);
         return "";
     }
     const architecture = config.targetArchitecture;
     const webViewDynLibPath = path.join(webviewPath, 'runtimes', `win-${architecture.toLowerCase()}`, 
         'native', 'WebView2Loader.dll');
     if (!fs.existsSync(webViewDynLibPath)) {
-        console.error(`Downloaded webview File Not Found: ${webViewDynLibPath}`);
+        console.error(`Downloaded webview file not found: ${webViewDynLibPath}`);
         return "";
     }
     return webViewDynLibPath;
@@ -162,7 +162,7 @@ const generateIndexHtml = (buildOption) => {
         return false;
     }
 
-    console.log("Generating index.html");
+    console.log("Generating index.html...");
     let template = fs.readFileSync(path.join(cwd, config.node.build.indexTemplate), 'utf-8');
     let sub;
     if (buildOption === "dev") {
@@ -170,8 +170,9 @@ const generateIndexHtml = (buildOption) => {
     } else {
         sub = `<script src="webui.js"></script>`
     }
-    template = template.replace('<!-- |SUBUSTITUTE WEBUI BRIDGE PATH| -->', sub);
+    template = template.replace(config.node.build.subStrings.webuiBridge, sub);
     fs.writeFileSync(path.join(cwd, config.node.build.indexHtml), template);
+    console.log("Generated index.html successfully.");
     return true;
 }
 
@@ -186,13 +187,17 @@ const copyNodeBuildFile = () => {
     if (!fs.existsSync(dest)) {
         fs.mkdirSync(dest);
     }
+    console.log(`Copying Node.js build file...`);
+    console.log(`Removing old Node.js build file...`);
+    fs.rmSync(dest, {recursive: true, force: true});
     fs.cpSync(nodeBuildPath, dest, {recursive: true});
+    console.log(`Copied Node.js build file successfully.`);
     return true;
 }
 
 const runTargetExecutable = () => {
     const cwd = process.cwd();
-    console.log("Running Target Executable");
+    console.log("Running target executable...");
     let filename = (() => {
         if (config.targetOs.toLowerCase() === 'windows') {
             return `${config.cpp.targetName}.exe`;
@@ -202,17 +207,17 @@ const runTargetExecutable = () => {
 
     const target = path.join(cwd, config.cpp.directory.build, filename);
     if (!fs.existsSync(target)) {
-        console.error(`Target Executable Not Found: ${target}`);
+        console.error(`Target executable not found: ${target}`);
         return false;
     } else {
-        console.log(`Target Executable Found: ${target}`);
+        console.log(`Target executable found: ${target}`);
     }
 
     console.log(`Executing: ${filename} --run-dev ${config.node.debug.nodeServer} ${config.node.debug.webuiServer}`);
     exec(`"${target}" --run-dev ${config.node.debug.nodeServer} ${config.node.debug.webuiServer}`, 
         (error, stdout, stderr) => {
             if (error) {
-                console.error(`Node.js Error:\n${error}`);
+                console.error(`Node.js error:\n${error}`);
                 return false;
             }
             console.log(`[INFO] ${stdout}`);
@@ -224,10 +229,9 @@ const runTargetExecutable = () => {
 
 const buildNodeProject = (buildOption) => {
     const cwd = process.cwd();
-    console.log("Building Node Project");
-    console.log("Build Option: " + buildOption);
+    console.log("Building node project...");
     if (!generateIndexHtml(buildOption)) {
-        console.log("Generate index.html Failed");
+        console.log("Generate index.html failed.");
         return false;
     }
     printSeparatorLine();
@@ -245,31 +249,31 @@ const buildNodeProject = (buildOption) => {
             if (!runTargetExecutable()) {
                 return false;
             }
-            console.log("Starting Node.js Debug Server...");
+            console.log("Starting Node.js debug server...");
         }
         execSync(command, {"stdio": "inherit"});
     } catch (error) {
-        console.error(`Node Build Error:\n${error}`);
+        console.error(`Node build error:\n${error}`);
         return false;
     } finally {
-        console.log(`Built Node Project Successfully.`);
+        console.log(`Built node project successfully.`);
     }
     printSeparatorLine();
 
     if (buildOption === "build") {
-        console.log("Copying Node Build File...");
+        console.log("Copying node build file...");
         if (!copyNodeBuildFile()) {
-            console.log("Copy Node Build File Failed");
+            console.log("Copy node build file failed.");
             return false;
         }
-        console.log("Done");
+        console.log("Done.");
     }
     printSeparatorLine();
     return true;
 }
 
 process.chdir(path.join(__dirname, '..'));
-console.log("Current Running Under Directory: " + process.cwd());
+console.log("Current running under directory: " + process.cwd());
 
 console.log("Starting WebUI CLI...");
 const buildOption = process.argv[2] ? process.argv[2].toLowerCase() : "none";
@@ -278,8 +282,8 @@ if (buildOption == "help") {
     console.log("Usage: node build.js <buildOption> [<params>]");
     console.log("buildOption: dev, build");
     console.log("params:");
-    console.log("  no-cpp: Skip C++ Project Build");
-    console.log("  no-reload: Skip Reload CMake File");
+    console.log("  no-cpp: Skip C++ project build");
+    console.log("  no-reload: Skip reload CMake file");
 
     process.exit(0);
 }
@@ -309,23 +313,25 @@ if (process.argv.length > 3) {
 
 const ctx = new Context(buildOption, shouldBuildCppProject, shouldReloadCMakeFile);
 
-console.log("Build Option: " + buildOption);
+console.log("Build option: " + buildOption);
 printSeparatorLine();
 
 if (ctx.shouldBuildCpp) {
     if (!buildCppProject(ctx)) {
-        console.log("C++ Project Build Failed");
+        console.log("C++ project build failed.");
         process.exit(1);
     }
 }
 
-console.log("C++ Project Build Successful");
+console.log("C++ project built successfully.");
+
+printSeparatorLine();
 
 if (!buildNodeProject(buildOption)) {
-    console.log("Node Project Build & Run Failed");
+    console.log("Node project build & run failed.");
     process.exit(1);
 }
 
-console.log("Node Project Build Successful");
+console.log("Node project built successfully.");
 
-console.log("Building Project Successful");
+console.log("Building project succeeded.");

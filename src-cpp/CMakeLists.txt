@@ -21,5 +21,7 @@ if(WIN32)
     FetchContent_MakeAvailable(${FC_NAME})
 endif()
 
-add_executable(${PROJECT_NAME} main.cpp)
+set(BASE_SOURCES main.cpp lib.hpp lib.cpp)
+
+add_executable(${PROJECT_NAME} ${BASE_SOURCES})
 target_link_libraries(${PROJECT_NAME} PRIVATE webui)
