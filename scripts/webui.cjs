@@ -72,15 +72,18 @@ const buildCppProject = (ctx) => {
     const makePath = config.cpp.buildSystem.path;
     const generatorPath = config.cpp.generator.path;
     const generatorName = config.cpp.generator.name;
+    const compilerConf = config.cpp.compiler;
 
     console.log(`CMake Path: ${makePath}`)
     console.log(`Generator Path: ${generatorPath}`);
+    console.log(`Using C++ compiler: ${compilerConf.name}`)
 
     const baseMakeGenCommand = `"${makePath}" -S ${cppProjectPath} -B ${cppBuildPath} -G ${generatorName}`;
 
     let makeGenCommand = baseMakeGenCommand 
         + ` "-DCMAKE_MAKE_PROGRAM=${generatorPath}"` 
-        + ` "-DCMAKE_BUILD_TYPE=${buildTargetType}"`;
+        + ` "-DCMAKE_BUILD_TYPE=${buildTargetType}"`
+        + ` "-DCMAKE_CXX_COMPILER=${compilerConf.path}"`;
     for (const [key, value] of Object.entries(config.cpp.buildSystem.options)) {
         makeGenCommand += ` "-D${key}=${value}"`;
     }

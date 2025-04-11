@@ -4,6 +4,10 @@
     "cpp": {
         "targetName": "webui-template",
         "defaultBuildTargetType": "Default",
+        "compiler": {
+            "name": "g++",
+            "path": "g++.exe"
+        },
         "buildSystem": {
             "name": "CMake",
             "path": "/* path to cmake */",
