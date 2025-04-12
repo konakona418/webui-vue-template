@@ -259,7 +259,7 @@ const buildNodeProject = (buildOption) => {
         console.error(`Node build error:\n${error}`);
         return false;
     } finally {
-        console.log(`Built node project successfully.`);
+        console.log(`Node project built successfully.`);
     }
     printSeparatorLine();
 
@@ -283,7 +283,7 @@ const buildOption = process.argv[2] ? process.argv[2].toLowerCase() : "none";
 
 if (buildOption == "help") {
     console.log("Usage: node build.js <buildOption> [<params>]");
-    console.log("buildOption: dev, build");
+    console.log("buildOption: dev, build, init");
     console.log("params:");
     console.log("  no-cpp: Skip C++ project build");
     console.log("  no-reload: Skip reload CMake file");
@@ -291,7 +291,9 @@ if (buildOption == "help") {
     process.exit(0);
 }
 
-if (buildOption === "none" || buildOption !== "dev" && buildOption !== "build") {
+const validOptions = ["dev", "build", "init"];
+
+if (buildOption === "none" || !validOptions.includes(buildOption)) {
     console.log("Unknown usage. Type 'help' for help.")
     process.exit(1);
 }
@@ -319,11 +321,23 @@ const ctx = new Context(buildOption, shouldBuildCppProject, shouldReloadCMakeFil
 console.log("Build option: " + buildOption);
 printSeparatorLine();
 
+if (buildOption === "init") {
+    ctx.shouldReloadCMakeFile = true;
+    ctx.shouldBuildCpp = false;
+    console.log("Initializing CMake project...");
+    console.log("Will reload CMake file, but will not build C++ project.");
+}
+
 if (ctx.shouldBuildCpp) {
     if (!buildCppProject(ctx)) {
         console.log("C++ project build failed.");
         process.exit(1);
     }
+}
+
+if (buildOption === "init") {
+    console.log("CMake project initialized successfully.")
+    process.exit(0);
 }
 
 console.log("C++ project built successfully.");
@@ -334,7 +348,5 @@ if (!buildNodeProject(buildOption)) {
     console.log("Node project build & run failed.");
     process.exit(1);
 }
-
-console.log("Node project built successfully.");
 
 console.log("Building project succeeded.");
