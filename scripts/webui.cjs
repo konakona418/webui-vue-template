@@ -8,10 +8,12 @@ const Context = class {
     buildOption;
     shouldBuildCpp;
     shouldReloadCMakeFile;
-    constructor(buildOption, shouldBuildCpp, shouldReloadCMakeFile) {
+    runServerOnly;
+    constructor(buildOption, shouldBuildCpp, shouldReloadCMakeFile, runServerOnly) {
         this.buildOption = buildOption;
         this.shouldBuildCpp = shouldBuildCpp;
         this.shouldReloadCMakeFile = shouldReloadCMakeFile;
+        this.runServerOnly = runServerOnly;
     }
 }
 
@@ -217,7 +219,7 @@ const runTargetExecutable = () => {
     }
 
     console.log(`Executing: ${filename} --run-dev ${config.node.debug.nodeServer} ${config.node.debug.webuiServer}`);
-    exec(`"${target}" --run-dev ${config.node.debug.nodeServer} ${config.node.debug.webuiServer}`, 
+    const proc = exec(`"${target}" --run-dev ${config.node.debug.nodeServer} ${config.node.debug.webuiServer}`, 
         (error, stdout, stderr) => {
             if (error) {
                 console.error(`Node.js error:\n${error}`);
@@ -227,11 +229,14 @@ const runTargetExecutable = () => {
             console.error(`[ERRO] ${stderr}`);
         }
     )
+    console.log(`Program started executing with PID: ${proc.pid}.`)
     return true;
 }
 
-const buildNodeProject = (buildOption) => {
+const buildNodeProject = (ctx) => {
     const cwd = process.cwd();
+    const buildOption = ctx.buildOption;
+
     console.log("Building node project...");
     if (!generateIndexHtml(buildOption)) {
         console.log("Generate index.html failed.");
@@ -249,8 +254,12 @@ const buildNodeProject = (buildOption) => {
 
     try {
         if (buildOption === "dev") {
-            if (!runTargetExecutable()) {
-                return false;
+            if (!ctx.runServerOnly) {
+                if (!runTargetExecutable()) {
+                    return false;
+                }
+            } else {
+                console.log("Skip running target executable.");
             }
             console.log("Starting Node.js debug server...");
         }
@@ -287,6 +296,7 @@ if (buildOption == "help") {
     console.log("params:");
     console.log("  no-cpp: Skip C++ project build");
     console.log("  no-reload: Skip reload CMake file");
+    console.log("  server-only: Run Node.js server only");
 
     process.exit(0);
 }
@@ -300,6 +310,7 @@ if (buildOption === "none" || !validOptions.includes(buildOption)) {
 
 let shouldBuildCppProject = true;
 let shouldReloadCMakeFile = true;
+let runServerOnly = false;
 if (process.argv.length > 3) {
     for (let i = 3; i < process.argv.length; i++) {
         switch (process.argv[i].toLowerCase()) {
@@ -309,6 +320,9 @@ if (process.argv.length > 3) {
             case "no-reload":
                 shouldReloadCMakeFile = false;
                 break;
+            case "server-only":
+                runServerOnly = true;
+                break;
             default:
                 console.log("Unknown params: " + process.argv[i]);
                 break;
@@ -316,7 +330,7 @@ if (process.argv.length > 3) {
     }
 }
 
-const ctx = new Context(buildOption, shouldBuildCppProject, shouldReloadCMakeFile);
+const ctx = new Context(buildOption, shouldBuildCppProject, shouldReloadCMakeFile, runServerOnly);
 
 console.log("Build option: " + buildOption);
 printSeparatorLine();
@@ -344,7 +358,7 @@ console.log("C++ project built successfully.");
 
 printSeparatorLine();
 
-if (!buildNodeProject(buildOption)) {
+if (!buildNodeProject(ctx)) {
     console.log("Node project build & run failed.");
     process.exit(1);
 }
