@@ -26,7 +26,7 @@ async function greet() {
         <img src="./assets/vue.svg" class="logo vue" alt="Vue logo" />
       </a>
       <a href="https://github.com/webui-dev/webui" target="_blank">
-        <img src="/webui.svg" class="logo vue" alt="WebUI logo" />
+        <img src="/webui.svg" class="logo webui" alt="WebUI logo" />
       </a>
     </div>
     <p>Click on the Vite, Vue, and WebUI logos to learn more.</p>
@@ -84,10 +84,6 @@ async function greet() {
   padding: 1.5em;
   will-change: filter;
   transition: 0.75s;
-}
-
-.logo.tauri:hover {
-  filter: drop-shadow(0 0 2em #24c8db);
 }
 
 .row {
