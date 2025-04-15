@@ -1,17 +1,21 @@
 <script setup lang="ts">
 import { ref } from "vue";
+import { invoke, callback } from "./webui-ext"
 
 const greetMsg = ref("");
 const name = ref("");
+const timer = ref(0);
 
 async function greet() {
-  let fn = (window as any)["greetCpp"];
-  if (fn) {
-    greetMsg.value = await fn(name.value);
-  } else {
-    greetMsg.value = "greetCpp not found";
-  }
+  invoke("greetCpp", name.value).then(msg => {
+    greetMsg.value = msg;
+  });
 }
+
+callback("timer", () => {
+  timer.value++;
+});
+
 </script>
 
 <template>
@@ -36,6 +40,7 @@ async function greet() {
       <button type="submit">Greet</button>
     </form>
     <p>{{ greetMsg }}</p>
+    <p>{{ timer }}</p>
   </main>
 </template>
 
